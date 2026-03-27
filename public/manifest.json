@@ -1,0 +1,23 @@
+{
+  "name": "SupplyTrack Smart POS",
+  "short_name": "SupplyTrack",
+  "description": "Smart Inventory, POS, and AI Analytics System",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/dashboard",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

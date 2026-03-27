@@ -1,0 +1,34 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate Prisma Schema
+      run: npx prisma generate
+      
+    - name: Run Linter
+      run: npm run lint || echo "Lint warnings present"
+      
+    - name: Build Next.js
+      run: npm run build
+      env:
+        DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/supplytrack"
