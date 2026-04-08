@@ -39,8 +39,10 @@ export function formatNumber(num: number | string | null | undefined): string {
 /**
  * Format percentage
  */
-export function formatPercent(value: number, decimals: number = 1): string {
-  return `${value.toFixed(decimals)}%`;
+export function formatPercent(value: number | string, decimals: number = 1): string {
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(n)) return '0%';
+  return `${n.toFixed(decimals)}%`;
 }
 
 /**

@@ -154,7 +154,7 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]}>
         {/* Recent Sales */}
         <Col xs={24} lg={14}>
-          <Card title="Recent Sales" bordered={false} style={{ borderRadius: 16 }}>
+          <Card title="Recent Sales" variant="borderless" style={{ borderRadius: 16 }}>
             <Table
               dataSource={data.recentSales}
               rowKey="id"
@@ -203,7 +203,7 @@ export default function DashboardPage() {
         <Col xs={24} lg={10}>
           <Card
             title="Top Products (This Month)"
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 16, marginBottom: 16 }}
           >
             {data.topProducts.length === 0 ? (
@@ -242,7 +242,7 @@ export default function DashboardPage() {
                   Active Alerts
                 </span>
               }
-              bordered={false}
+              variant="borderless"
               style={{ borderRadius: 16 }}
             >
               {data.alerts.slice(0, 5).map((alert) => (

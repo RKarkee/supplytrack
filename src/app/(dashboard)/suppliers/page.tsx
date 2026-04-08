@@ -64,7 +64,7 @@ export default function SuppliersPage() {
         <div><Title level={3} style={{ margin: 0 }}>Suppliers</Title><Text type="secondary">{pagination.total} suppliers</Text></div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditing(null); form.resetFields(); setModalOpen(true); }} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', border: 'none' }}>Add Supplier</Button>
       </div>
-      <Card bordered={false} style={{ borderRadius: 16 }}>
+      <Card variant="borderless" style={{ borderRadius: 16 }}>
         <Input placeholder="Search..." prefix={<SearchOutlined />} value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 16, maxWidth: 400 }} allowClear />
         <Table columns={columns} dataSource={suppliers} rowKey="id" loading={loading} pagination={{ current: pagination.current, total: pagination.total, pageSize: 20, onChange: (p) => fetchSuppliers(p, search) }} size="middle" />
       </Card>

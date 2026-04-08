@@ -128,16 +128,16 @@ export default function ReportsPage() {
         <Tabs.TabPane tab="Sales & Profit" key="sales">
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={8}>
-              <Card bordered={false}><Statistic title="Total Revenue" value={reportData?.summary?.totalRevenue || 0} precision={2} prefix="Rs" valueStyle={{ color: '#1890ff' }} /></Card>
+              <Card variant="borderless"><Statistic title="Total Revenue" value={reportData?.summary?.totalRevenue || 0} precision={2} prefix="Rs" styles={{ content: { color: '#1890ff' } }} /></Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card bordered={false}><Statistic title="Total Profit" value={reportData?.summary?.totalProfit || 0} precision={2} prefix="Rs" valueStyle={{ color: '#52c41a' }} /></Card>
+              <Card variant="borderless"><Statistic title="Total Profit" value={reportData?.summary?.totalProfit || 0} precision={2} prefix="Rs" styles={{ content: { color: '#52c41a' } }} /></Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card bordered={false}><Statistic title="Transactions" value={reportData?.summary?.totalSales || 0} /></Card>
+              <Card variant="borderless"><Statistic title="Transactions" value={reportData?.summary?.totalSales || 0} /></Card>
             </Col>
           </Row>
-          <Card bordered={false} style={{ marginBottom: 16 }}>
+          <Card variant="borderless" style={{ marginBottom: 16 }}>
             <Title level={5}>Revenue Timeline</Title>
             <div style={{ height: 300 }}>
               {reportData?.timeline && reportData.timeline.length > 0 ? <Line {...salesLineConfig} /> : <div style={{textAlign: 'center', paddingTop: 100}}>No sales in period</div>}
@@ -149,13 +149,13 @@ export default function ReportsPage() {
         <Tabs.TabPane tab="Inventory Valuation" key="stock">
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={12}>
-              <Card bordered={false}><Statistic title="Total Asset Value (Purchase)" value={reportData?.summary?.stockValuation || 0} precision={2} prefix="Rs" /></Card>
+              <Card variant="borderless"><Statistic title="Total Asset Value (Purchase)" value={reportData?.summary?.stockValuation || 0} precision={2} prefix="Rs" /></Card>
             </Col>
             <Col xs={24} sm={12}>
-              <Card bordered={false}><Statistic title="Total Retail Value (Selling)" value={reportData?.summary?.retailValuation || 0} precision={2} prefix="Rs" valueStyle={{ color: '#722ed1' }} /></Card>
+              <Card variant="borderless"><Statistic title="Total Retail Value (Selling)" value={reportData?.summary?.retailValuation || 0} precision={2} prefix="Rs" styles={{ content: { color: '#722ed1' } }} /></Card>
             </Col>
           </Row>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Table columns={stockColumns} dataSource={reportData?.products || []} rowKey="id" loading={loading} pagination={{ pageSize: 20 }} />
           </Card>
         </Tabs.TabPane>
@@ -163,13 +163,13 @@ export default function ReportsPage() {
         <Tabs.TabPane tab="Customer Credit" key="credit">
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={12}>
-              <Card bordered={false}><Statistic title="Total Outstanding Credit" value={reportData?.summary?.totalCreditOutstanding || 0} precision={2} prefix="Rs" valueStyle={{ color: '#cf1322' }} /></Card>
+              <Card variant="borderless"><Statistic title="Total Outstanding Credit" value={reportData?.summary?.totalCreditOutstanding || 0} precision={2} prefix="Rs" styles={{ content: { color: '#cf1322' } }} /></Card>
             </Col>
             <Col xs={24} sm={12}>
-              <Card bordered={false}><Statistic title="Customers in Debt" value={reportData?.summary?.customerCount || 0} /></Card>
+              <Card variant="borderless"><Statistic title="Customers in Debt" value={reportData?.summary?.customerCount || 0} /></Card>
             </Col>
           </Row>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Table columns={creditColumns} dataSource={reportData?.customers || []} rowKey="id" loading={loading} />
           </Card>
         </Tabs.TabPane>

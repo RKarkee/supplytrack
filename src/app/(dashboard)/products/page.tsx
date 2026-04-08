@@ -163,7 +163,7 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      <Card bordered={false} style={{ borderRadius: 16 }}>
+      <Card variant="borderless" style={{ borderRadius: 16 }}>
         <Input
           placeholder="Search products..."
           prefix={<SearchOutlined />}

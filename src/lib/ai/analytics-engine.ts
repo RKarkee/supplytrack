@@ -12,7 +12,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma';
-import { SaleTrend } from '@/generated/prisma';
+import { SaleTrend } from '@/generated/prisma/client';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -159,7 +159,7 @@ export async function runAnalytics(): Promise<{ processed: number; errors: strin
       try {
         // Get last 6 months of sales data
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-        
+
         const monthlySales = await prisma.$queryRaw<MonthlyData[]>`
           SELECT 
             DATE_TRUNC('month', s."createdAt") as month,
@@ -399,9 +399,20 @@ export async function getAnalyticsSummary() {
 
   const latest = Array.from(latestByProduct.values());
 
+  const deadStockValue = latest
+    .filter((f) => f.isDeadStock)
+    .reduce((sum, f) => sum + (Number(f.product.currentStock) * Number(f.product.purchasePrice)), 0);
+
+  const avgMargin = latest.length > 0 
+    ? latest.reduce((sum, f) => sum + Number(f.marginPercent), 0) / latest.length 
+    : 0;
+
   return {
     totalProducts: latest.length,
+    forecasts: latest,
     deadStock: latest.filter((f) => f.isDeadStock),
+    deadStockValue,
+    avgMargin,
     increasing: latest.filter((f) => f.trend === 'INCREASING'),
     decreasing: latest.filter((f) => f.trend === 'DECREASING'),
     stable: latest.filter((f) => f.trend === 'STABLE'),

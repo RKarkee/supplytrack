@@ -72,14 +72,14 @@ export default function AnalyticsPage() {
 
   const forecastColumns = [
     { title: 'Product', dataIndex: ['product', 'name'], key: 'name' },
-    { title: 'Forecast Qty', dataIndex: 'forecastQty', key: 'qty', render: (v: number) => <Text strong>{v.toFixed(2)}</Text> },
+    { title: 'Forecast Qty', dataIndex: 'forecastQty', key: 'qty', render: (v: number) => <Text strong>{Number(v).toFixed(2)}</Text> },
     { title: 'Trend', dataIndex: 'trend', key: 'trend', render: (v: string) => (
       <Tag color={v === 'INCREASING' ? 'green' : v === 'DECREASING' ? 'red' : 'blue'}>
         {v === 'INCREASING' && <ArrowUpOutlined />} {v === 'DECREASING' && <ArrowDownOutlined />} {v}
       </Tag>
     )},
-    { title: 'Reorder Level', dataIndex: 'reorderLevel', key: 'reorder' },
-    { title: 'Buy Qty', dataIndex: 'recommendedPurchaseQty', key: 'buy', render: (v: number) => <Text style={{color: '#52c41a'}} strong>{v?.toFixed(2) || '-'}</Text> },
+    { title: 'Reorder Level', dataIndex: 'reorderLevel', key: 'reorder', render: (v: number) => Number(v).toFixed(2) },
+    { title: 'Buy Qty', dataIndex: 'recommendedPurchaseQty', key: 'buy', render: (v: number) => <Text style={{color: '#52c41a'}} strong>{v ? Number(v).toFixed(2) : '-'}</Text> },
   ];
 
   return (
@@ -105,25 +105,42 @@ export default function AnalyticsPage() {
         <>
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={24} sm={8}>
-              <Card bordered={false} style={{ borderRadius: 12 }}>
-                <Statistic title="Total Dead Stock Value" value={Math.random() * 50000} prefix="Rs" precision={2} valueStyle={{ color: '#cf1322' }} />
+              <Card variant="borderless" style={{ borderRadius: 12 }}>
+                <Statistic 
+                  title="Total Dead Stock Value" 
+                  value={data.summary?.deadStockValue || 0} 
+                  prefix="Rs" 
+                  precision={2} 
+                  styles={{ content: { color: '#cf1322' } }} 
+                />
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card bordered={false} style={{ borderRadius: 12 }}>
-                <Statistic title="Products to Reorder" value={data.summary?.forecasts?.filter((f: any) => f.recommendedPurchaseQty > 0).length || 0} suffix="items" valueStyle={{ color: '#1890ff' }} />
+              <Card variant="borderless" style={{ borderRadius: 12 }}>
+                <Statistic 
+                  title="Products to Reorder" 
+                  value={data.summary?.forecasts?.filter((f: any) => f.recommendedPurchaseQty > 0).length || 0} 
+                  suffix="items" 
+                  styles={{ content: { color: '#1890ff' } }} 
+                />
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card bordered={false} style={{ borderRadius: 12 }}>
-                <Statistic title="Average Margin" value={23.5} suffix="%" precision={1} valueStyle={{ color: '#52c41a' }} />
+              <Card variant="borderless" style={{ borderRadius: 12 }}>
+                <Statistic 
+                  title="Average Margin" 
+                  value={data.summary?.avgMargin || 0} 
+                  suffix="%" 
+                  precision={1} 
+                  styles={{ content: { color: '#52c41a' } }} 
+                />
               </Card>
             </Col>
           </Row>
 
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
-              <Card title="Sales Heatmap (Hour vs Day)" bordered={false} style={{ borderRadius: 12, height: '100%' }}>
+              <Card title="Sales Heatmap (Hour vs Day)" variant="borderless" style={{ borderRadius: 12, height: '100%' }}>
                 {data.heatmap?.length > 0 ? (
                   <Heatmap {...heatmapConfig} height={300} />
                 ) : (
@@ -132,7 +149,7 @@ export default function AnalyticsPage() {
               </Card>
             </Col>
             <Col xs={24} lg={12}>
-              <Card title="Dead Stock Alert" bordered={false} style={{ borderRadius: 12, height: '100%' }}>
+              <Card title="Dead Stock Alert" variant="borderless" style={{ borderRadius: 12, height: '100%' }}>
                 <Table 
                   dataSource={data.summary?.forecasts?.filter((f: any) => f.isDeadStock) || []} 
                   columns={deadStockColumns} 
@@ -146,7 +163,7 @@ export default function AnalyticsPage() {
 
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col span={24}>
-              <Card title="Purchase Recommendations & Forecasts" bordered={false} style={{ borderRadius: 12 }}>
+              <Card title="Purchase Recommendations & Forecasts" variant="borderless" style={{ borderRadius: 12 }}>
                 <Table 
                   dataSource={data.summary?.forecasts || []} 
                   columns={forecastColumns} 

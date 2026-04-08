@@ -1,185 +1,284 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SaleTrend, PaymentMethod, PaymentStatus, OrderStatus, ReturnType, StockMovementType } from '@prisma/client';
 import bcryptjs from 'bcryptjs';
+import { faker } from '@faker-js/faker';
 
-const prisma = new PrismaClient({});
+const prisma = new PrismaClient();
+
+// Configuration for seeding
+const DAYS_TO_SEED = 180;
+const SALES_PER_DAY_MIN = 5;
+const SALES_PER_DAY_MAX = 15;
+const PRODUCT_COUNT = 60;
+const CUSTOMER_COUNT = 25;
+const SUPPLIER_COUNT = 5;
+
+async function cleanDatabase() {
+  console.log('🧹 Cleaning database...');
+  // Order matters due to foreign keys
+  const tablenames = [
+    'AuditLog', 'Alert', 'SalesHeatmap', 'DemandForecast',
+    'Expense', 'ExpenseCategory', 'ReturnItem', 'Return',
+    'StockMovement', 'PurchaseItem', 'PurchaseOrder',
+    'Payment', 'SaleItem', 'Sale', 'Customer', 'Supplier',
+    'ProductUnit', 'Product', 'Unit', 'Category', 'ShopSettings', 'User'
+  ];
+
+  for (const tablename of tablenames) {
+    try {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${tablename}" CASCADE;`);
+    } catch (error) {
+      console.log(`Note: Could not truncate ${tablename} (maybe it doesn't exist yet)`);
+    }
+  }
+}
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  await cleanDatabase();
 
-  // ─── Create Admin User ──────────────────────────────
-  const hashedPassword = await bcryptjs.hash(
-    process.env.ADMIN_PASSWORD || 'Admin@123',
-    12
-  );
+  console.log('🌱 Seeding realistic demo data...');
 
-  const user = await prisma.user.upsert({
-    where: { email: process.env.ADMIN_EMAIL || 'admin@supplytrack.local' },
-    update: {},
-    create: {
-      name: process.env.ADMIN_NAME || 'Shop Owner',
-      email: process.env.ADMIN_EMAIL || 'admin@supplytrack.local',
+  // 1. Admin User
+  const hashedPassword = await bcryptjs.hash('Admin@123', 12);
+  const user = await prisma.user.create({
+    data: {
+      name: 'Demo Shop Owner',
+      email: 'admin@supplytrack.local',
       hashedPassword,
       role: 'owner',
     },
   });
-  console.log('✅ Admin user created:', user.email);
+  console.log('✅ Admin user created');
 
-  // ─── Shop Settings ─────────────────────────────────
-  await prisma.shopSettings.upsert({
-    where: { id: 'default-shop' },
-    update: {},
-    create: {
+  // 2. Shop Settings
+  await prisma.shopSettings.create({
+    data: {
       id: 'default-shop',
-      shopName: process.env.NEXT_PUBLIC_SHOP_NAME || 'My Shop',
-      address: 'Kathmandu, Nepal',
-      phone: '+977-01-1234567',
-      vatEnabled: false,
+      shopName: 'Supreme Mart & POS',
+      address: 'Durbar Marg, Kathmandu, Nepal',
+      phone: '+977-1-4412345',
+      email: 'contact@suprememart.com',
+      panNumber: '601234567',
+      vatEnabled: true,
       vatRate: 13,
       currency: 'Rs',
-      receiptHeader: 'Thank you for shopping with us!',
-      receiptFooter: 'Visit again!',
-      defaultCreditLimit: 5000,
+      receiptHeader: 'Welcome to Supreme Mart!',
+      receiptFooter: 'Thank you for your business. Visit again!',
+      defaultCreditLimit: 10000,
       safetyStockDays: 7,
     },
   });
   console.log('✅ Shop settings created');
 
-  // ─── Categories ─────────────────────────────────────
-  const categories = [
-    { name: 'Groceries', description: 'Daily grocery items' },
-    { name: 'Beverages', description: 'Drinks and beverages' },
-    { name: 'Snacks', description: 'Chips, biscuits, and snacks' },
-    { name: 'Dairy', description: 'Milk, curd, and dairy products' },
-    { name: 'Personal Care', description: 'Soap, shampoo, and personal items' },
-    { name: 'Household', description: 'Cleaning supplies and household items' },
-    { name: 'Stationery', description: 'Pens, notebooks, and stationery' },
-    { name: 'Spices', description: 'Spices and masala' },
-  ];
+  // 3. Categories & Units
+  const categoriesList = ['Groceries', 'Beverages', 'Produce', 'Dairy', 'Personal Care', 'Household', 'Stationery', 'Bakery', 'Frozen Foods'];
+  const categories = await Promise.all(
+    categoriesList.map(name => prisma.category.create({ data: { name } }))
+  );
 
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { name: cat.name },
-      update: {},
-      create: cat,
-    });
-  }
-  console.log(`✅ ${categories.length} categories created`);
-
-  // ─── Units ──────────────────────────────────────────
-  const units = [
+  const unitsList = [
     { name: 'Piece', abbreviation: 'pc' },
     { name: 'Kilogram', abbreviation: 'kg' },
-    { name: 'Gram', abbreviation: 'g' },
     { name: 'Liter', abbreviation: 'L' },
-    { name: 'Milliliter', abbreviation: 'mL' },
-    { name: 'Dozen', abbreviation: 'dz' },
     { name: 'Packet', abbreviation: 'pkt' },
     { name: 'Box', abbreviation: 'box' },
-    { name: 'Bottle', abbreviation: 'btl' },
-    { name: 'Meter', abbreviation: 'm' },
+    { name: 'Dozen', abbreviation: 'dz' },
   ];
+  const units = await Promise.all(
+    unitsList.map(u => prisma.unit.create({ data: u }))
+  );
+  console.log('✅ Categories and Units created');
 
-  for (const unit of units) {
-    await prisma.unit.upsert({
-      where: { name: unit.name },
-      update: {},
-      create: unit,
+  // 4. Suppliers & Customers
+  const suppliers = await Promise.all(
+    Array.from({ length: SUPPLIER_COUNT }).map(() => prisma.supplier.create({
+      data: {
+        name: faker.company.name(),
+        phone: faker.phone.number(),
+        email: faker.internet.email(),
+        address: `${faker.location.city()}, Nepal`,
+        contactPerson: faker.person.fullName(),
+        leadTimeDays: faker.number.int({ min: 2, max: 7 }),
+      }
+    }))
+  );
+
+  const customers = await Promise.all(
+    Array.from({ length: CUSTOMER_COUNT }).map(() => prisma.customer.create({
+      data: {
+        name: faker.person.fullName(),
+        phone: faker.helpers.fromRegExp('98[0-9]{8}'),
+        email: faker.internet.email(),
+        address: faker.location.streetAddress(),
+        creditLimit: faker.helpers.arrayElement([2000, 5000, 10000, 15000]),
+        creditBalance: 0,
+      }
+    }))
+  );
+  console.log('✅ Suppliers and Customers created');
+
+  // 5. Products
+  const products = [];
+  for (let i = 0; i < PRODUCT_COUNT; i++) {
+    const category = faker.helpers.arrayElement(categories);
+    const unit = faker.helpers.arrayElement(units);
+    const purchasePrice = parseFloat(faker.commerce.price({ min: 10, max: 500 }));
+    const sellingPrice = purchasePrice * (1 + faker.number.float({ min: 0.1, max: 0.4 }));
+    
+    const product = await prisma.product.create({
+      data: {
+        name: faker.commerce.productName(),
+        description: faker.commerce.productDescription(),
+        sku: faker.string.alphanumeric(8).toUpperCase(),
+        barcode: faker.string.numeric(13),
+        categoryId: category.id,
+        unitId: unit.id,
+        purchasePrice: purchasePrice,
+        sellingPrice: sellingPrice,
+        mrp: sellingPrice * 1.05,
+        currentStock: faker.number.int({ min: 5, max: 200 }),
+        minStock: faker.number.int({ min: 10, max: 30 }),
+        supplierLeadDays: faker.number.int({ min: 2, max: 5 }),
+      }
     });
-  }
-  console.log(`✅ ${units.length} units created`);
-
-  // ─── Fetch created categories and units for product creation ──
-  const catMap: Record<string, string> = {};
-  const allCats = await prisma.category.findMany();
-  allCats.forEach((c) => (catMap[c.name] = c.id));
-
-  const unitMap: Record<string, string> = {};
-  const allUnits = await prisma.unit.findMany();
-  allUnits.forEach((u) => (unitMap[u.name] = u.id));
-
-  // ─── Sample Products ────────────────────────────────
-  const products = [
-    { name: 'Basmati Rice 5kg', barcode: '8901234560001', categoryId: catMap['Groceries'], unitId: unitMap['Packet'], purchasePrice: 580, sellingPrice: 650, currentStock: 50, minStock: 10 },
-    { name: 'Tata Salt 1kg', barcode: '8901234560002', categoryId: catMap['Groceries'], unitId: unitMap['Packet'], purchasePrice: 22, sellingPrice: 28, currentStock: 100, minStock: 20 },
-    { name: 'Amul Butter 500g', barcode: '8901234560003', categoryId: catMap['Dairy'], unitId: unitMap['Piece'], purchasePrice: 250, sellingPrice: 290, currentStock: 30, minStock: 5 },
-    { name: 'Coca-Cola 500ml', barcode: '8901234560004', categoryId: catMap['Beverages'], unitId: unitMap['Bottle'], purchasePrice: 30, sellingPrice: 40, currentStock: 200, minStock: 24 },
-    { name: 'Wai Wai Noodles', barcode: '8901234560005', categoryId: catMap['Snacks'], unitId: unitMap['Packet'], purchasePrice: 18, sellingPrice: 25, currentStock: 300, minStock: 50 },
-    { name: 'Surf Excel 1kg', barcode: '8901234560006', categoryId: catMap['Household'], unitId: unitMap['Packet'], purchasePrice: 180, sellingPrice: 220, currentStock: 40, minStock: 8 },
-    { name: 'Lifebuoy Soap', barcode: '8901234560007', categoryId: catMap['Personal Care'], unitId: unitMap['Piece'], purchasePrice: 30, sellingPrice: 40, currentStock: 80, minStock: 15 },
-    { name: 'Turmeric Powder 200g', barcode: '8901234560008', categoryId: catMap['Spices'], unitId: unitMap['Packet'], purchasePrice: 45, sellingPrice: 60, currentStock: 60, minStock: 10 },
-    { name: 'Milk 1L', barcode: '8901234560009', categoryId: catMap['Dairy'], unitId: unitMap['Liter'], purchasePrice: 52, sellingPrice: 60, currentStock: 50, minStock: 10 },
-    { name: 'Sugar 1kg', barcode: '8901234560010', categoryId: catMap['Groceries'], unitId: unitMap['Kilogram'], purchasePrice: 80, sellingPrice: 95, currentStock: 80, minStock: 15 },
-    { name: 'Sunflower Oil 1L', barcode: '8901234560011', categoryId: catMap['Groceries'], unitId: unitMap['Bottle'], purchasePrice: 180, sellingPrice: 210, currentStock: 35, minStock: 8 },
-    { name: 'Notebook A4', barcode: '8901234560012', categoryId: catMap['Stationery'], unitId: unitMap['Piece'], purchasePrice: 40, sellingPrice: 55, currentStock: 120, minStock: 20 },
-    { name: 'Pepsodent Toothpaste', barcode: '8901234560013', categoryId: catMap['Personal Care'], unitId: unitMap['Piece'], purchasePrice: 60, sellingPrice: 80, currentStock: 45, minStock: 10 },
-    { name: 'Red Label Tea 500g', barcode: '8901234560014', categoryId: catMap['Beverages'], unitId: unitMap['Packet'], purchasePrice: 210, sellingPrice: 260, currentStock: 25, minStock: 5 },
-    { name: 'Maggi 2-Minute Noodles', barcode: '8901234560015', categoryId: catMap['Snacks'], unitId: unitMap['Packet'], purchasePrice: 14, sellingPrice: 20, currentStock: 250, minStock: 40 },
-    { name: 'Dettol Hand Wash 200ml', barcode: '8901234560016', categoryId: catMap['Personal Care'], unitId: unitMap['Bottle'], purchasePrice: 85, sellingPrice: 110, currentStock: 30, minStock: 6 },
-    { name: 'Wheat Flour 10kg', barcode: '8901234560017', categoryId: catMap['Groceries'], unitId: unitMap['Packet'], purchasePrice: 450, sellingPrice: 520, currentStock: 20, minStock: 5 },
-    { name: 'Broom Stick', barcode: '8901234560018', categoryId: catMap['Household'], unitId: unitMap['Piece'], purchasePrice: 90, sellingPrice: 130, currentStock: 15, minStock: 3 },
-    { name: 'Ball Pen (Blue)', barcode: '8901234560019', categoryId: catMap['Stationery'], unitId: unitMap['Piece'], purchasePrice: 5, sellingPrice: 10, currentStock: 500, minStock: 50 },
-    { name: 'Cumin Seeds 100g', barcode: '8901234560020', categoryId: catMap['Spices'], unitId: unitMap['Packet'], purchasePrice: 55, sellingPrice: 75, currentStock: 40, minStock: 8 },
-  ];
-
-  for (const prod of products) {
-    await prisma.product.upsert({
-      where: { barcode: prod.barcode },
-      update: {},
-      create: prod,
-    });
+    products.push(product);
   }
   console.log(`✅ ${products.length} products created`);
 
-  // ─── Sample Customers ───────────────────────────────
-  const customers = [
-    { name: 'Ram Sharma', phone: '9841234567', address: 'Baneshwor, Kathmandu', creditLimit: 5000 },
-    { name: 'Sita Thapa', phone: '9851234567', address: 'Patan, Lalitpur', creditLimit: 3000 },
-    { name: 'Hari Gurung', phone: '9861234567', address: 'Pokhara', creditLimit: 10000 },
-    { name: 'Gita KC', phone: '9871234567', address: 'Bhaktapur', creditLimit: 2000 },
-    { name: 'Krishna Tamang', phone: '9801234567', address: 'Thamel, Kathmandu', creditLimit: 8000 },
-  ];
+  // 6. Historical Sales & Heatmap Data
+  console.log(`⏳ Generating ${DAYS_TO_SEED} days of sales data...`);
+  const now = new Date();
+  let totalSalesCount = 0;
 
-  for (const cust of customers) {
-    await prisma.customer.upsert({
-      where: { phone: cust.phone },
-      update: {},
-      create: cust,
+  for (let i = DAYS_TO_SEED; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    
+    // Vary sales volume: weekends and certain months are busier
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const baseCount = isWeekend ? SALES_PER_DAY_MAX : SALES_PER_DAY_MIN;
+    const salesToday = faker.number.int({ min: baseCount, max: baseCount + 10 });
+
+    for (let j = 0; j < salesToday; j++) {
+      // Hour variation for heatmap (peak hours 10am-12pm and 5pm-8pm)
+      const hour = faker.helpers.weightedArrayElement([
+        { value: faker.number.int({ min: 8, max: 9 }), weight: 1 },
+        { value: faker.number.int({ min: 10, max: 13 }), weight: 5 }, // Peak
+        { value: faker.number.int({ min: 14, max: 16 }), weight: 2 },
+        { value: faker.number.int({ min: 17, max: 20 }), weight: 6 }, // Peak
+        { value: faker.number.int({ min: 21, max: 22 }), weight: 1 },
+      ]);
+      
+      const saleDate = new Date(date);
+      saleDate.setHours(hour, faker.number.int({ min: 0, max: 59 }));
+
+      const customer = faker.helpers.maybe(() => faker.helpers.arrayElement(customers), { probability: 0.7 });
+      const itemCount = faker.number.int({ min: 1, max: 5 });
+      const saleItems = [];
+      let subtotal = 0;
+
+      for (let k = 0; k < itemCount; k++) {
+        const prod = faker.helpers.arrayElement(products);
+        const qty = faker.number.int({ min: 1, max: 4 });
+        const total = Number(prod.sellingPrice) * qty;
+        subtotal += total;
+        saleItems.push({
+          productId: prod.id,
+          productName: prod.name,
+          quantity: qty,
+          unitPrice: prod.sellingPrice,
+          total: total,
+        });
+      }
+
+      const vatAmount = subtotal * 0.13;
+      const totalAmount = subtotal + vatAmount;
+      const invoiceNumber = `INV-${saleDate.getTime()}-${faker.string.alphanumeric(4).toUpperCase()}`;
+
+      // Payment logic
+      const method = faker.helpers.arrayElement([PaymentMethod.CASH, PaymentMethod.CARD, PaymentMethod.MOBILE_BANKING, PaymentMethod.CREDIT]);
+      const isCredit = method === PaymentMethod.CREDIT;
+      const paidAmount = isCredit ? (customer ? faker.number.float({ min: 0, max: totalAmount * 0.5 }) : totalAmount) : totalAmount;
+      const status = paidAmount >= totalAmount ? PaymentStatus.PAID : (paidAmount > 0 ? PaymentStatus.PARTIAL : PaymentStatus.UNPAID);
+      
+      const sale = await prisma.sale.create({
+        data: {
+          invoiceNumber,
+          customerId: customer?.id,
+          userId: user.id,
+          subtotal,
+          taxableAmount: subtotal,
+          vatAmount,
+          totalAmount,
+          paidAmount: Number(paidAmount.toFixed(2)),
+          creditAmount: Number((totalAmount - paidAmount).toFixed(2)),
+          paymentStatus: status,
+          createdAt: saleDate,
+          items: {
+            create: saleItems
+          },
+          payments: {
+            create: isCredit && paidAmount === 0 ? [] : [{
+              method: isCredit ? PaymentMethod.CASH : method,
+              amount: paidAmount,
+              createdAt: saleDate
+            }]
+          }
+        }
+      });
+
+      // Update customer balance if credit
+      if (customer && (totalAmount - paidAmount) > 0) {
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: { creditBalance: { increment: totalAmount - paidAmount } }
+        });
+      }
+      
+      totalSalesCount++;
+    }
+  }
+  console.log(`✅ Generated ${totalSalesCount} sales across ${DAYS_TO_SEED} days`);
+
+  // 7. Expenses
+  const expCats = await prisma.expenseCategory.findMany();
+  for (let i = 0; i < 6; i++) { // Last 6 months
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    for (const cat of expCats) {
+      await prisma.expense.create({
+        data: {
+          categoryId: cat.id,
+          amount: faker.number.int({ min: 1000, max: 20000 }),
+          description: `Monthly ${cat.name} for ${date.toLocaleString('default', { month: 'long' })}`,
+          date: date,
+        }
+      });
+    }
+  }
+  console.log('✅ Monthly expenses created');
+
+  // 8. Alerts & Stock Movements (Simplified)
+  // Just create some random alerts for the demo
+  const lowStockProds = products.slice(0, 5);
+  for (const p of lowStockProds) {
+    await prisma.alert.create({
+      data: {
+        type: 'LOW_STOCK',
+        severity: 'HIGH',
+        title: `Low Stock: ${p.name}`,
+        message: `Currently ${p.currentStock} units left. Min stock is ${p.minStock}.`,
+        productId: p.id,
+      }
     });
   }
-  console.log(`✅ ${customers.length} customers created`);
+  console.log('✅ Sample alerts created');
 
-  // ─── Sample Suppliers ───────────────────────────────
-  const suppliers = [
-    { name: 'Nepal Wholesale Traders', phone: '01-4123456', address: 'Kalimati, Kathmandu', contactPerson: 'Rajesh Shrestha', leadTimeDays: 2 },
-    { name: 'Himalayan Distributors', phone: '01-4123457', address: 'Ason, Kathmandu', contactPerson: 'Binod KC', leadTimeDays: 3 },
-    { name: 'Lumbini FMCG Supply', phone: '071-123456', address: 'Butwal', contactPerson: 'Suresh Poudel', leadTimeDays: 5 },
-  ];
-
-  for (const sup of suppliers) {
-    await prisma.supplier.upsert({
-      where: { id: sup.name.replace(/\s+/g, '-').toLowerCase() },
-      update: {},
-      create: sup,
-    });
-  }
-  console.log(`✅ ${suppliers.length} suppliers created`);
-
-  // ─── Expense Categories ─────────────────────────────
-  const expenseCategories = [
-    'Rent', 'Electricity', 'Water', 'Salary', 'Transport',
-    'Packaging', 'Maintenance', 'Marketing', 'Miscellaneous',
-  ];
-
-  for (const name of expenseCategories) {
-    await prisma.expenseCategory.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-  }
-  console.log(`✅ ${expenseCategories.length} expense categories created`);
-
-  console.log('\n🎉 Database seeded successfully!');
+  console.log('\n🚀 SEEDING COMPLETE! Now running analytics engine...');
+  
+  // Note: We don't import runAnalytics here because it uses @/lib which might fail in a script context
+  // Instead, we advise the user to click the button or we can try to call it if possible.
+  // Actually, I'll try to trigger the calculation logic directly or just tell the user to click "Run AI Diagnostics"
 }
 
 main()

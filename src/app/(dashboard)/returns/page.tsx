@@ -86,7 +86,7 @@ export default function ReturnsPage() {
         <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setSelectedSale(null); setModalOpen(true); }} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', border: 'none' }}>Process Return</Button>
       </div>
       
-      <Card bordered={false} style={{ borderRadius: 16 }}>
+      <Card variant="borderless" style={{ borderRadius: 16 }}>
         <Input placeholder="Search return or invoice number..." prefix={<SearchOutlined />} value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 16, maxWidth: 400 }} allowClear />
         <Table columns={columns} dataSource={returns} rowKey="id" loading={loading} pagination={{ current: pagination.current, total: pagination.total, pageSize: 20, onChange: (p) => fetchReturns(p, search) }} size="middle" />
       </Card>

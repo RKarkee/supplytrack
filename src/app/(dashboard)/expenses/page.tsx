@@ -89,7 +89,7 @@ export default function ExpensesPage() {
           <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setModalOpen(true); }} style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', border: 'none' }}>Add Expense</Button>
         </Space>
       </div>
-      <Card bordered={false} style={{ borderRadius: 16 }}>
+      <Card variant="borderless" style={{ borderRadius: 16 }}>
         <Input placeholder="Search description..." prefix={<SearchOutlined />} value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 16, maxWidth: 400 }} allowClear />
         <Table columns={columns} dataSource={expenses} rowKey="id" loading={loading} pagination={{ current: pagination.current, total: pagination.total, pageSize: 20, onChange: (p) => fetchExpenses(p, search) }} size="middle" />
       </Card>

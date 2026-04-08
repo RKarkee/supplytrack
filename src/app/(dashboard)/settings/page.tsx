@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Typography, Card, Form, Input, InputNumber, Switch, Button, message, Divider, Space } from 'antd';
-import { SaveOutlined, StoreOutlined, FileTextOutlined, AccountBookOutlined } from '@ant-design/icons';
+import { SaveOutlined, ShopOutlined, FileTextOutlined, AccountBookOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -68,7 +68,7 @@ export default function SettingsPage() {
         onFinish={handleSave} 
         initialValues={{ currency: 'Rs' }}
       >
-        <Card title={<><StoreOutlined /> Shop Information</>} bordered={false} style={{ marginBottom: 24, borderRadius: 12 }}>
+        <Card title={<><ShopOutlined /> Shop Information</>} variant="borderless" style={{ marginBottom: 24, borderRadius: 12 }}>
           <Form.Item name="shopName" label="Shop Name" rules={[{ required: true, message: 'Shop name is required' }]}>
             <Input size="large" />
           </Form.Item>
@@ -85,7 +85,7 @@ export default function SettingsPage() {
           </Space>
         </Card>
 
-        <Card title={<><AccountBookOutlined /> Financial & Region</>} bordered={false} style={{ marginBottom: 24, borderRadius: 12 }}>
+        <Card title={<><AccountBookOutlined /> Financial & Region</>} variant="borderless" style={{ marginBottom: 24, borderRadius: 12 }}>
           <Space size="large" style={{ display: 'flex' }}>
             <Form.Item name="currency" label="Currency Symbol" rules={[{ required: true }]} style={{ width: 150 }}>
               <Input size="large" />
@@ -106,7 +106,7 @@ export default function SettingsPage() {
           </Space>
         </Card>
 
-        <Card title={<><FileTextOutlined /> Receipt Configuration</>} bordered={false} style={{ marginBottom: 24, borderRadius: 12 }}>
+        <Card title={<><FileTextOutlined /> Receipt Configuration</>} variant="borderless" style={{ marginBottom: 24, borderRadius: 12 }}>
           <Form.Item name="receiptHeader" label="Receipt Header Text">
             <Input.TextArea rows={2} placeholder="E.g. Welcome to our store! We sell best quality goods." />
           </Form.Item>
